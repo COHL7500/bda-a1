@@ -1,1 +1,9 @@
-package bdsa_a1
+package main
+
+import (
+	"fmt"
+)
+
+func main() {
+	fmt.Print("Cat Squish")
+}
