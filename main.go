@@ -9,15 +9,15 @@ import (
 // inspiration: https://gist.github.com/nmjmdr/d3637b726b564033d318
 var wg sync.WaitGroup
 
-var free = make([]chan bool, 5)
-var done = make([]chan bool, 5)
+var forkFree = make([]chan bool, 5)
+var forkDone = make([]chan bool, 5)
 
 func fork(i int) {
 	for {
-		free[i] <- true
+		forkFree[i] <- true
 
 		select {
-		case <-done[i]:
+		case <-forkDone[i]:
 			break
 		}
 	}
@@ -35,7 +35,7 @@ func philosopher(i int) {
 
 		select {
 
-		case isLeftFree = <-free[leftFork]:
+		case isLeftFree = <-forkFree[leftFork]:
 			break
 
 		default:
@@ -45,7 +45,7 @@ func philosopher(i int) {
 
 		select {
 
-		case isRightFree = <-free[rightFork]:
+		case isRightFree = <-forkFree[rightFork]:
 			break
 
 		default:
@@ -54,17 +54,17 @@ func philosopher(i int) {
 		}
 
 		if isLeftFree && !isRightFree {
-			done[leftFork] <- true
+			forkDone[leftFork] <- true
 
 		} else if !isLeftFree && isRightFree {
-			done[rightFork] <- true
+			forkDone[rightFork] <- true
 
 		} else if isLeftFree && isRightFree {
 			biteCount = biteCount + 1
 			fmt.Println("Philosopher", i, ": Eating", biteCount, "/ 3")
 			time.Sleep(1000 * time.Millisecond)
-			done[leftFork] <- true
-			done[rightFork] <- true
+			forkDone[leftFork] <- true
+			forkDone[rightFork] <- true
 			if biteCount == 3 {
 				break
 			}
@@ -77,12 +77,12 @@ func philosopher(i int) {
 }
 
 func main() {
-	fmt.Println("Eating commences...")
+	fmt.Println("Eating commences!")
 	wg.Add(5)
 
 	for i := 0; i < 5; i++ {
-		free[i] = make(chan bool)
-		done[i] = make(chan bool)
+		forkFree[i] = make(chan bool)
+		forkDone[i] = make(chan bool)
 	}
 
 	for i := 0; i < 5; i++ {
