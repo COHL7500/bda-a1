@@ -60,15 +60,15 @@ func philosopher(i int) {
 			done[rightFork] <- true
 
 		} else if isLeftFree && isRightFree {
-			fmt.Println("Philosopher", i, ": Eating", biteCount+1, "/ 3")
+			biteCount = biteCount + 1
+			fmt.Println("Philosopher", i, ": Eating", biteCount, "/ 3")
 			time.Sleep(1000 * time.Millisecond)
 			done[leftFork] <- true
 			done[rightFork] <- true
-			biteCount = biteCount + 1
-			fmt.Println("Philosopher", i, ": Thinking...")
 			if biteCount == 3 {
 				break
 			}
+			fmt.Println("Philosopher", i, ": Thinking...")
 		}
 	}
 
