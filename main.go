@@ -9,15 +9,16 @@ import (
 // inspiration: https://gist.github.com/nmjmdr/d3637b726b564033d318
 var wg sync.WaitGroup
 
-var forkFree = make([]chan bool, 5)
-var forkDone = make([]chan bool, 5)
+var forkIsAvailable = make([]chan bool, 5)
+var doneWithFork = make([]chan bool, 5)
 
 func fork(i int) {
+
 	for {
-		forkFree[i] <- true
+		forkIsAvailable[i] <- true
 
 		select {
-		case <-forkDone[i]:
+		case <-doneWithFork[i]:
 			break
 		}
 	}
@@ -30,41 +31,35 @@ func philosopher(i int) {
 	fmt.Println("Philosopher", i, ": started eating...")
 
 	for {
-		isLeftFree := false
-		isRightFree := false
+		isLeftForkFree := false
+		isRightForkFree := false
 
 		select {
 
-		case isLeftFree = <-forkFree[leftFork]:
-			break
-
+		case isLeftForkFree = <-forkIsAvailable[leftFork]:
 		default:
-			isLeftFree = false
 			break
 		}
 
 		select {
 
-		case isRightFree = <-forkFree[rightFork]:
-			break
-
+		case isRightForkFree = <-forkIsAvailable[rightFork]:
 		default:
-			isRightFree = false
 			break
 		}
 
-		if isLeftFree && !isRightFree {
-			forkDone[leftFork] <- true
+		if isLeftForkFree && !isRightForkFree {
+			doneWithFork[leftFork] <- true
 
-		} else if !isLeftFree && isRightFree {
-			forkDone[rightFork] <- true
+		} else if !isLeftForkFree && isRightForkFree {
+			doneWithFork[rightFork] <- true
 
-		} else if isLeftFree && isRightFree {
+		} else if isLeftForkFree && isRightForkFree {
 			biteCount = biteCount + 1
 			fmt.Println("Philosopher", i, ": Eating", biteCount, "/ 3")
 			time.Sleep(1000 * time.Millisecond)
-			forkDone[leftFork] <- true
-			forkDone[rightFork] <- true
+			doneWithFork[leftFork] <- true
+			doneWithFork[rightFork] <- true
 			if biteCount == 3 {
 				break
 			}
@@ -76,13 +71,22 @@ func philosopher(i int) {
 	wg.Done()
 }
 
+/*
+Why does the program not deadlock?
+
+We prevent a deadlock by making the philosophers drop their forks IF they don't have 2 in their hands.
+Furthermore, due to delay between each philosopher picking up a fork, we inherently prevent a deadlock.
+They constantly check if they 2 in their hand. If not, they release the fork once again until they can
+pick up two.
+*/
+
 func main() {
 	fmt.Println("Eating commences!")
 	wg.Add(5)
 
 	for i := 0; i < 5; i++ {
-		forkFree[i] = make(chan bool)
-		forkDone[i] = make(chan bool)
+		forkIsAvailable[i] = make(chan bool)
+		doneWithFork[i] = make(chan bool)
 	}
 
 	for i := 0; i < 5; i++ {
